@@ -3,6 +3,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import path from "path";
+import mongoose from "mongoose";
 
 // Files
 import connectDB from "./config/db.js";
@@ -30,7 +31,19 @@ app.use("/api/v1/genre", genreRoutes);
 app.use("/api/v1/movies", moviesRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    message: "Movies backend is running",
+    mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+  });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok", mongodb: mongoose.connection.readyState === 1 ? "connected" : "disconnected" });
+});
+
 const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname + "/uploads")));
 
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`Server is running on port ${PORT}`));
