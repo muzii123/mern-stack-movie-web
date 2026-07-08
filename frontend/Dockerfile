@@ -1,5 +1,3 @@
-//  Dockerfile for the frontend of the MERN Movies App
-
 FROM node:20-alpine
 
 WORKDIR /app/frontend
