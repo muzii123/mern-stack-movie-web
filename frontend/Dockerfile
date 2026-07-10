@@ -1,4 +1,5 @@
-FROM node:20-alpine
+# Stage 1: Build the React app
+FROM node:20-alpine AS builder
 
 WORKDIR /app/frontend
 
@@ -11,6 +12,24 @@ RUN npm config set fetch-retries 5 \
 
 COPY frontend .
 
-EXPOSE 5173
+# Accept backend URL as build argument
+ARG VITE_BACKEND_TARGET=http://localhost:3000
+ENV VITE_BACKEND_TARGET=$VITE_BACKEND_TARGET
 
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+RUN npm run build
+
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+
+# Remove default nginx config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy our custom nginx config
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copy built static files
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

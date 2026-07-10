@@ -25,11 +25,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        VITE_BACKEND_TARGET: http://backend:3000
     container_name: movies-frontend-staging
-    env_file:
-      - STAGING.env
     ports:
-      - "5174:5173"
+      - "5174:80"
     depends_on:
       - backend
 

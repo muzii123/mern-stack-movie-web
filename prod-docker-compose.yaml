@@ -25,11 +25,11 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        VITE_BACKEND_TARGET: http://backend:3000
     container_name: movies-frontend-prod
-    env_file:
-      - PROD.env
     ports:
-      - "5175:5173"
+      - "5175:80"
     depends_on:
       - backend
 
