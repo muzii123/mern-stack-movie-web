@@ -1,4 +1,4 @@
-name: Deploy Staging
+name: CI/CD Staging
 
 on:
   push:
@@ -6,7 +6,39 @@ on:
       - staging
 
 jobs:
-  deploy:
+  ci:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Check backend syntax
+        run: node --check backend/index.js
+
+  cd:
+    name: Deploy to Staging
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:
