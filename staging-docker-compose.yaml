@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: movies-mongo-staging
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-staging-data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: movies-backend-staging
+    env_file:
+      - STAGING.env
+    ports:
+      - "3001:3000"
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: movies-frontend-staging
+    env_file:
+      - STAGING.env
+    ports:
+      - "5174:5173"
+    depends_on:
+      - backend
+
+volumes:
+  mongo-staging-data:

@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: movies-mongo-prod
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongo-prod-data:/data/db
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: movies-backend-prod
+    env_file:
+      - PROD.env
+    ports:
+      - "3002:3000"
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: movies-frontend-prod
+    env_file:
+      - PROD.env
+    ports:
+      - "5175:5173"
+    depends_on:
+      - backend
+
+volumes:
+  mongo-prod-data:
