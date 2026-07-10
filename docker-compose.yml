@@ -2,7 +2,7 @@ version: "3.9"
 services:
   mongo:
     image: mongo:7
-    container_name: movies-mongo
+    container_name: movies-mongo-main
     ports:
       - "27017:27017"
     volumes:
