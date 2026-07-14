@@ -22,6 +22,9 @@ services:
       - "3000:3000"
     depends_on:
       - mongo
+    networks:
+      - movies-dev_default
+      - movies-observability_observability
 
   frontend:
     build:
@@ -37,3 +40,9 @@ services:
 
 volumes:
   mongo-dev-data:
+
+networks:
+  movies-dev_default:
+    driver: bridge
+  movies-observability_observability:
+    external: true

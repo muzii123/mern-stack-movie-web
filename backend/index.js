@@ -1,9 +1,15 @@
+// Tracing must be imported first before anything else
+import "./tracing.js";
+
 // Packages
 import express from "express";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import path from "path";
 import mongoose from "mongoose";
+
+// Logger
+import logger from "./logger.js";
 
 // Files
 import connectDB from "./config/db.js";
@@ -28,7 +34,6 @@ dotenv.config();
 connectDB();
 
 const app = express();
-
 // middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -36,10 +41,9 @@ app.use(cookieParser());
 
 const PORT = process.env.PORT || 3000;
 
-// ─── Metrics Middleware ───────────────────────────────────────────────────────
-// Runs on every request to track duration, count, and active connections
+// ─── Metrics + Logging Middleware ────────────────────────────────────────────
+// Runs on every request to track duration, count, active connections and logs
 app.use((req, res, next) => {
-  // Skip tracking the /metrics endpoint itself
   if (req.path === "/metrics") return next();
 
   const start = Date.now();
@@ -58,9 +62,21 @@ app.use((req, res, next) => {
     httpRequestDuration.observe(labels, duration);
     activeConnections.dec();
 
-    // Track errors separately
     if (res.statusCode >= 400) {
       httpErrorsTotal.inc(labels);
+      logger.warn("HTTP Error", {
+        method: req.method,
+        route,
+        status_code: res.statusCode,
+        duration_ms: duration * 1000,
+      });
+    } else {
+      logger.info("HTTP Request", {
+        method: req.method,
+        route,
+        status_code: res.statusCode,
+        duration_ms: duration * 1000,
+      });
     }
   });
 
@@ -114,5 +130,5 @@ const __dirname = path.resolve();
 app.use("/uploads", express.static(path.join(__dirname + "/uploads")));
 
 app.listen(PORT, "0.0.0.0", () =>
-  console.log(`Server is running on port ${PORT}`)
+  logger.info(`Server is running on port ${PORT}`, { port: PORT, env: process.env.NODE_ENV })
 );
