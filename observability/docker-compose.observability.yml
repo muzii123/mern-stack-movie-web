@@ -1,0 +1,111 @@
+version: "3.9"
+
+name: movies-observability
+
+networks:
+  # Join all existing app networks so Prometheus can reach backend containers
+  movies-dev_default:
+    external: true
+  movies-staging_default:
+    external: true
+  movies-prod_default:
+    external: true
+  observability:
+    driver: bridge
+
+services:
+
+  # ── Prometheus ──────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-remote-write-receiver"
+    networks:
+      - observability
+      - movies-dev_default
+      - movies-staging_default
+      - movies-prod_default
+    restart: unless-stopped
+
+  # ── Loki (log storage) ──────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # ── Tempo (trace storage) ───────────────────────────────────────────────────
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "4317:4317"    # OTLP gRPC
+      - "4318:4318"    # OTLP HTTP
+    volumes:
+      - ./tempo-config.yml:/etc/tempo-config.yml
+      - tempo-data:/tmp/tempo
+    command: -config.file=/etc/tempo-config.yml
+    networks:
+      - observability
+    restart: unless-stopped
+
+  # ── OpenTelemetry Collector ─────────────────────────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    ports:
+      - "4319:4317"    # OTLP gRPC (mapped to 4319 to avoid conflict with tempo)
+      - "4320:4318"    # OTLP HTTP
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    command: --config=/etc/otel-collector-config.yml
+    networks:
+      - observability
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+  # ── Grafana (visualization) ─────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3003:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+    networks:
+      - observability
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:
