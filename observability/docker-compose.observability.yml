@@ -3,13 +3,6 @@ version: "3.9"
 name: movies-observability
 
 networks:
-  # Join all existing app networks so Prometheus can reach backend containers
-  movies-dev_default:
-    external: true
-  movies-staging_default:
-    external: true
-  movies-prod_default:
-    external: true
   observability:
     driver: bridge
 
@@ -30,9 +23,6 @@ services:
       - "--web.enable-remote-write-receiver"
     networks:
       - observability
-      - movies-dev_default
-      - movies-staging_default
-      - movies-prod_default
     restart: unless-stopped
 
   # ── Loki (log storage) ──────────────────────────────────────────────────────
@@ -56,8 +46,8 @@ services:
     user: root
     ports:
       - "3200:3200"
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "4317:4317"
+      - "4318:4318"
     volumes:
       - ./tempo-config.yml:/etc/tempo-config.yml
       - tempo-data:/var/tempo
@@ -71,8 +61,8 @@ services:
     image: otel/opentelemetry-collector-contrib:latest
     container_name: otel-collector
     ports:
-      - "4319:4317"    # OTLP gRPC (mapped to 4319 to avoid conflict with tempo)
-      - "4320:4318"    # OTLP HTTP
+      - "4319:4317"
+      - "4320:4318"
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     command: --config=/etc/otel-collector-config.yml
