@@ -4,11 +4,11 @@ name: movies-observability
 
 networks:
   # Join all existing app networks so Prometheus can reach backend containers
-  movies-dev_default:
+  movies-dev_movies-dev_default:
     external: true
-  movies-staging_default:
+  movies-staging_movies-staging_default:
     external: true
-  movies-prod_default:
+  movies-prod_movies-prod_default:
     external: true
   observability:
     driver: bridge
@@ -30,9 +30,9 @@ services:
       - "--web.enable-remote-write-receiver"
     networks:
       - observability
-      - movies-dev_default
-      - movies-staging_default
-      - movies-prod_default
+      - movies-dev_movies-dev_default
+      - movies-staging_movies-staging_default
+      - movies-prod_movies-prod_default
     restart: unless-stopped
 
   # ── Loki (log storage) ──────────────────────────────────────────────────────
